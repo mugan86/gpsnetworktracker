@@ -11,7 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
     private boolean comeback = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,11 +35,17 @@ public class MainActivity extends AppCompatActivity {
     public void find()
     {
         GPSNetworkTracker gps = new GPSNetworkTracker(MainActivity.this);
-        if(gps.canGetLocation()){
-
+        System.out.println("Can Get Location: " + gps.canGetLocation() + " -  Permission Granted: " + gps.getPermissionGranted());
+        if(!gps.getPermissionGranted())
+        {
+            Toast.makeText(getApplicationContext(), "Wait to permission true...", Toast.LENGTH_LONG).show();
+        }
+        else if(gps.getPermissionGranted() && gps.canGetLocation())
+        {
             Toast.makeText(getApplicationContext(), String.valueOf(gps.getLocation().getLatitude()), Toast.LENGTH_LONG).show();
-        }else{
-
+        }
+        else
+        {
             String message_title = "Kokapen konfigurazioa";
             String message = "Enable";
             String config_btn = "Konfiguratu";
@@ -86,7 +92,5 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
-
 
 }

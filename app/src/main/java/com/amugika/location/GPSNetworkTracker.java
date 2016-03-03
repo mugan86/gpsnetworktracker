@@ -2,9 +2,7 @@ package com.amugika.location;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Service;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,8 +13,12 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 
+/**
+ * Created by anartzmugika on 2/3/16.
+ */
 public class GPSNetworkTracker extends Service implements LocationListener {
 
 	private final Activity mContext;
@@ -33,6 +35,10 @@ public class GPSNetworkTracker extends Service implements LocationListener {
 	Location location; // location
 	double latitude; // latitude
 	double longitude; // longitude
+
+	//Permission granted
+
+	boolean permission_granted = false;
 
 	// The minimum distance to change Updates in meters
 	private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10; // 10 meters
@@ -65,55 +71,58 @@ public class GPSNetworkTracker extends Service implements LocationListener {
 				// no network provider is enabled
 			} else {
 				this.canGetLocation = true;
-                if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    Log.e("Location", "Permission Not Given");
+				this.permission_granted = false;
+				if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+					// TODO: Consider calling
+					Log.e("Location", "Permission Not Given");
 					//Check Permissions Now
 					ActivityCompat.requestPermissions(mContext,
 							new String[]{android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION},
 							198);
-                    return null;
-                }
-				else
-				{
+					return null;
+				} else {
+					this.permission_granted = true;
 					System.out.println("*******************************************************************");
-					System.out.println("PERMISSION HAS BEEN GRANTED");
+					System.out.println("PERMISSION HAS BEEN GRANTED (GPS TRACKER)");
 					System.out.println("*******************************************************************");
-				}
-
-				if (isNetworkEnabled) {
-					locationManager.requestLocationUpdates(
-							LocationManager.NETWORK_PROVIDER,
-							MIN_TIME_BW_UPDATES,
-							MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-					Log.d("Network", "Network");
-					if (locationManager != null) {
-						location = locationManager
-								.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-						if (location != null) {
-							latitude = location.getLatitude();
-							longitude = location.getLongitude();
-						}
-					}
-				}
-				// if GPS Enabled get lat/long using GPS Services
-				if (isGPSEnabled) {
-					if (location == null) {
+					if (isNetworkEnabled) {
 						locationManager.requestLocationUpdates(
-								LocationManager.GPS_PROVIDER,
+								LocationManager.NETWORK_PROVIDER,
 								MIN_TIME_BW_UPDATES,
 								MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-						Log.d("GPS Enabled", "GPS Enabled");
+						Log.d("Network", "Network");
 						if (locationManager != null) {
 							location = locationManager
-									.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+									.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 							if (location != null) {
 								latitude = location.getLatitude();
 								longitude = location.getLongitude();
 							}
 						}
 					}
+					// if GPS Enabled get lat/long using GPS Services
+					if (isGPSEnabled) {
+						if (location == null) {
+							locationManager.requestLocationUpdates(
+									LocationManager.GPS_PROVIDER,
+									MIN_TIME_BW_UPDATES,
+									MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+							Log.d("GPS Enabled", "GPS Enabled");
+							if (locationManager != null) {
+								location = locationManager
+										.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+								if (location != null) {
+									latitude = location.getLatitude();
+									longitude = location.getLongitude();
+								}
+							}
+						}
+					}
+
+					System.out.println("LOCATION (GPS TRACKER): " + latitude + " / " + longitude);
 				}
+
+
 			}
 
 		} catch (Exception e) {
@@ -125,87 +134,92 @@ public class GPSNetworkTracker extends Service implements LocationListener {
 
 		return location;
 	}
-	
+
 	/**
 	 * Stop using GPS listener
 	 * Calling this function will stop using GPS in your app
-	 * */
-	public void stopUsingGPS(){
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            Log.e("Location", "Permission Not Given");
-            return;
-        }
-		if(locationManager != null){
+	 */
+	public void stopUsingGPS() {
+		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+			// TODO: Consider calling
+			Log.e("Location", "Permission Not Given");
+			return;
+		}
+		if (locationManager != null) {
 			locationManager.removeUpdates(GPSNetworkTracker.this);
-		}		
+		}
 	}
-	
+
 	/**
 	 * Function to get latitude
-	 * */
-	public double getLatitude(){
-		if(location != null){
+	 */
+	public double getLatitude() {
+		if (location != null) {
 			latitude = location.getLatitude();
 		}
-		
+
 		// return latitude
 		return latitude;
 	}
-	
+
 	/**
 	 * Function to get longitude
-	 * */
-	public double getLongitude(){
-		if(location != null){
+	 */
+	public double getLongitude() {
+		if (location != null) {
 			longitude = location.getLongitude();
 		}
-		
+
 		// return longitude
 		return longitude;
 	}
-	
+
 	/**
 	 * Function to check GPS/wifi enabled
+	 *
 	 * @return boolean
-	 * */
+	 */
 	public boolean canGetLocation() {
 		return this.canGetLocation;
 	}
-	
+
+	public boolean getPermissionGranted()
+	{
+		return this.permission_granted;
+	}
+
 	/**
 	 * Function to show settings alert dialog
 	 * On pressing Settings button will lauch Settings Options
-	 * */
-	public void showSettingsAlert(String message_title, String message, String config_btn){
+	 */
+	public void showSettingsAlert(String message_title, String message, String config_btn) {
 		AlertDialog.Builder alertDialog = new AlertDialog.Builder(mContext);
-   	 
-        // Setting Dialog Title
-        alertDialog.setTitle(message_title);
- 
-        // Setting Dialog Message
-        alertDialog.setMessage(message);
- 
-        // On pressing Settings button
-        alertDialog.setPositiveButton(config_btn, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog,int which) {
-            	Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-            	mContext.startActivity(intent);
-            }
-        });
- 
-        // on pressing cancel button
-        alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-            dialog.cancel();
-            }
-        });
- 
-        // Showing Alert Message
-        alertDialog.show();
+
+		// Setting Dialog Title
+		alertDialog.setTitle(message_title);
+
+		// Setting Dialog Message
+		alertDialog.setMessage(message);
+
+		// On pressing Settings button
+		alertDialog.setPositiveButton(config_btn, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+				mContext.startActivity(intent);
+			}
+		});
+
+		// on pressing cancel button
+		alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				dialog.cancel();
+			}
+		});
+
+		// Showing Alert Message
+		alertDialog.show();
 	}
-	
-	
+
 
 	@Override
 	public void onLocationChanged(Location location) {
@@ -227,6 +241,4 @@ public class GPSNetworkTracker extends Service implements LocationListener {
 	public IBinder onBind(Intent arg0) {
 		return null;
 	}
-
-
 }
